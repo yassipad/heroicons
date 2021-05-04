@@ -43,6 +43,7 @@ let transform = {
         }
       )
       .replace('export function render', 'module.exports = function render')
+      .replace('require("vue")', 'require("vue-demi")')
   },
 }
 
