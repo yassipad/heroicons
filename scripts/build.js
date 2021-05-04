@@ -5,6 +5,7 @@ const rimraf = promisify(require('rimraf'))
 const svgr = require('@svgr/core').default
 const babel = require('@babel/core')
 const { compile: compileVue } = require('@vue/compiler-dom')
+const compilerVue2 = require('vue-template-compiler')
 
 let transform = {
   react: async (svg, componentName, format) => {
@@ -43,7 +44,19 @@ let transform = {
         }
       )
       .replace('export function render', 'module.exports = function render')
-      .replace('require("vue")', 'require("vue-demi")')
+  },
+  vue2: (svg, componentName, format) => {
+    const { render } = compilerVue2.compile(svg, {
+      mode: 'module',
+    })
+
+    const code = `export function render (h) ${render.replace('with(this)', '')}`
+
+    if (format === 'esm') {
+      return code.replace('export function', 'export default function')
+    }
+
+    return code
   },
 }
 
@@ -72,7 +85,8 @@ function exportAll(icons, format, includeExtension = true) {
 }
 
 async function buildIcons(package, style, format) {
-  let outDir = `./${package}/${style}`
+  let outDir = package === 'vue2' ? `./vue/vue2/${style}` : `./${package}/${style}`
+
   if (format === 'esm') {
     outDir += '/esm'
   }
@@ -107,15 +121,17 @@ async function buildIcons(package, style, format) {
 function main(package) {
   console.log(`Building ${package} package...`)
 
-  Promise.all([rimraf(`./${package}/outline/*`), rimraf(`./${package}/solid/*`)])
+  const basePath = package === 'vue2' ? `./vue/vue2` : `./${package}`
+
+  Promise.all([rimraf(`${basePath}/outline/*`), rimraf(`${basePath}/solid/*`)])
     .then(() =>
       Promise.all([
         buildIcons(package, 'solid', 'esm'),
         buildIcons(package, 'solid', 'cjs'),
         buildIcons(package, 'outline', 'esm'),
         buildIcons(package, 'outline', 'cjs'),
-        fs.writeFile(`./${package}/outline/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
-        fs.writeFile(`./${package}/solid/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
+        fs.writeFile(`${basePath}/outline/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
+        fs.writeFile(`${basePath}/solid/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
       ])
     )
     .then(() => console.log(`Finished building ${package} package.`))
