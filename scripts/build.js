@@ -23,9 +23,26 @@ let transform = {
       .replace('export default', 'module.exports =')
   },
   vue: (svg, componentName, format) => {
-    let { code } = compileVue(svg, {
+    let { code: vue3Code } = compileVue(svg, {
       mode: 'module',
     })
+    vue3Code = vue3Code.replace('function render', 'function renderVue3').replace('export', '')
+
+    let { render: vue2Code } = compilerVue2.compile(svg)
+    vue2Code = `function renderVue2 (_c) ${vue2Code.replace('with(this)', '')}`
+
+    const code = `
+    import { isVue2 } from 'vue-demi'
+    ${vue3Code}
+    ${vue2Code}
+    
+    export function render () {
+      if (isVue2) {
+        return renderVue2.apply(this, arguments)
+      } else {
+        return renderVue3.apply(this, arguments)
+      }
+    }`
 
     if (format === 'esm') {
       return code.replace('export function', 'export default function')
@@ -44,19 +61,6 @@ let transform = {
         }
       )
       .replace('export function render', 'module.exports = function render')
-  },
-  vue2: (svg, componentName, format) => {
-    const { render } = compilerVue2.compile(svg, {
-      mode: 'module',
-    })
-
-    const code = `export function render (h) ${render.replace('with(this)', '')}`
-
-    if (format === 'esm') {
-      return code.replace('export function', 'export default function')
-    }
-
-    return code
   },
 }
 
@@ -85,7 +89,7 @@ function exportAll(icons, format, includeExtension = true) {
 }
 
 async function buildIcons(package, style, format) {
-  let outDir = package === 'vue2' ? `./vue/vue2/${style}` : `./${package}/${style}`
+  let outDir = `./${package}/${style}`
 
   if (format === 'esm') {
     outDir += '/esm'
@@ -121,17 +125,15 @@ async function buildIcons(package, style, format) {
 function main(package) {
   console.log(`Building ${package} package...`)
 
-  const basePath = package === 'vue2' ? `./vue/vue2` : `./${package}`
-
-  Promise.all([rimraf(`${basePath}/outline/*`), rimraf(`${basePath}/solid/*`)])
+  Promise.all([rimraf(`./${package}/outline/*`), rimraf(`./${package}/solid/*`)])
     .then(() =>
       Promise.all([
         buildIcons(package, 'solid', 'esm'),
         buildIcons(package, 'solid', 'cjs'),
         buildIcons(package, 'outline', 'esm'),
         buildIcons(package, 'outline', 'cjs'),
-        fs.writeFile(`${basePath}/outline/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
-        fs.writeFile(`${basePath}/solid/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
+        fs.writeFile(`./${package}/outline/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
+        fs.writeFile(`./${package}/solid/package.json`, `{"module": "./esm/index.js"}`, 'utf8'),
       ])
     )
     .then(() => console.log(`Finished building ${package} package.`))
