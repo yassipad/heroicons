@@ -31,7 +31,7 @@ let transform = {
     let { render: vue2Code } = compilerVue2.compile(svg)
     vue2Code = `function renderVue2 (_c) ${vue2Code.replace('with(this)', '')}`
 
-    const vueVersionCheck = 'isVue2 ? renderVue2 : renderVue3'
+    const vueVersionCheck = '{ render: isVue2 ? renderVue2 : renderVue3 }'
     const exportStatement = `export default ${vueVersionCheck}`
 
     const code = `
@@ -57,7 +57,7 @@ let transform = {
           return `const { ${newImports} } = require("${mod}")`
         }
       )
-      .replace(exportStatement, `module.exports = { render: ${vueVersionCheck} }`)
+      .replace(exportStatement, `module.exports = ${vueVersionCheck}`)
   },
 }
 
