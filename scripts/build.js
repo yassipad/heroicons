@@ -37,7 +37,7 @@ let transform = {
 
     const code = `
     import { isVue2 } from 'vue-demi'
-    import _Vue from 'vue'
+    import * as _Vue from 'vue'
 
     ${vue3Code}
     ${vue2Code}
@@ -51,7 +51,7 @@ let transform = {
 
     return code
       .replace("import { isVue2 } from 'vue-demi'", "const { isVue2 } = require('vue-demi')")
-      .replace("import _Vue from 'vue'", "const _Vue = require('vue')")
+      .replace("import * as _Vue from 'vue'", "const _Vue = require('vue')")
       .replace(exportStatement, `module.exports = ${vueVersionCheck}`)
   },
 }
