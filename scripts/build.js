@@ -99,7 +99,7 @@ async function buildIcons(package, style, format) {
       if (package === 'react') {
         types = `import * as React from 'react';\ndeclare function ${componentName}(props: React.ComponentProps<'svg'>): JSX.Element;\nexport default ${componentName};\n`
       } else if (package === 'vue') {
-        types = `import Vue from 'vue';\ndeclare const ${componentName} = { render: any };\nexport default ${componentName};\n`
+        types = `declare const ${componentName} = { render:  };\nexport default ${componentName};\n`
       }
 
       return [
