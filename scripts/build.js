@@ -31,7 +31,8 @@ let transform = {
     let { render: vue2Code } = compilerVue2.compile(svg)
     vue2Code = `function renderVue2 (_c) ${vue2Code.replace('with(this)', '')}`
 
-    const exportStatement = 'export default isVue2 ? renderVue2 : renderVue3'
+    const vueVersionCheck = 'isVue2 ? renderVue2 : renderVue3'
+    const exportStatement = `export default ${vueVersionCheck}`
 
     const code = `
     import { isVue2 } from 'vue-demi'
@@ -56,7 +57,7 @@ let transform = {
           return `const { ${newImports} } = require("${mod}")`
         }
       )
-      .replace(exportStatement, 'module.exports = { render: isVue2 ? renderVue2 : renderVue3 }')
+      .replace(exportStatement, `module.exports = { render: ${vueVersionCheck} }`)
   },
 }
 
