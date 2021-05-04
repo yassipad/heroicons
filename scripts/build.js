@@ -98,6 +98,8 @@ async function buildIcons(package, style, format) {
 
       if (package === 'react') {
         types = `import * as React from 'react';\ndeclare function ${componentName}(props: React.ComponentProps<'svg'>): JSX.Element;\nexport default ${componentName};\n`
+      } else if (package === 'vue') {
+        types = `import Vue from 'vue';\ndeclare const ${componentName} = { render: any };\nexport default ${componentName};\n`
       }
 
       return [
@@ -109,9 +111,7 @@ async function buildIcons(package, style, format) {
 
   await fs.writeFile(`${outDir}/index.js`, exportAll(icons, format), 'utf8')
 
-  if (package === 'react') {
-    await fs.writeFile(`${outDir}/index.d.ts`, exportAll(icons, 'esm', false), 'utf8')
-  }
+  await fs.writeFile(`${outDir}/index.d.ts`, exportAll(icons, 'esm', false), 'utf8')
 }
 
 function main(package) {
