@@ -23,10 +23,11 @@ let transform = {
       .replace('export default', 'module.exports =')
   },
   vue: (svg, componentName, format) => {
-    let { code: vue3Code } = compileVue(svg, {
-      mode: 'module',
-    })
-    vue3Code = vue3Code.replace('function render', 'function renderVue3').replace('export', '')
+    let { code: vue3Code } = compileVue(svg)
+    vue3Code = vue3Code
+      .replace(/with \(_ctx\) {([\s\S]+)}/, '$1')
+      .replace('const _Vue = Vue', '')
+      .replace('return function render', 'function renderVue3')
 
     let { render: vue2Code } = compilerVue2.compile(svg)
     vue2Code = `function renderVue2 (_c) ${vue2Code.replace('with(this)', '')}`
@@ -36,8 +37,11 @@ let transform = {
 
     const code = `
     import { isVue2 } from 'vue-demi'
+    import _Vue from 'vue'
+
     ${vue3Code}
     ${vue2Code}
+
     ${exportStatement}
     `
 
@@ -46,17 +50,8 @@ let transform = {
     }
 
     return code
-      .replace(
-        /import\s+\{\s*([^}]+)\s*\}\s+from\s+(['"])(.*?)\2/,
-        (_match, imports, _quote, mod) => {
-          let newImports = imports
-            .split(',')
-            .map((i) => i.trim().replace(/\s+as\s+/, ': '))
-            .join(', ')
-
-          return `const { ${newImports} } = require("${mod}")`
-        }
-      )
+      .replace("import { isVue2 } from 'vue-demi'", "const { isVue2 } = require('vue-demi')")
+      .replace("import _Vue from 'vue'", "const _Vue = require('vue')")
       .replace(exportStatement, `module.exports = ${vueVersionCheck}`)
   },
 }
